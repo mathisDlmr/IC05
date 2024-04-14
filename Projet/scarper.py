@@ -1,41 +1,57 @@
+import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import time
 
-# Chemin du webdriver, assurez-vous de télécharger le bon pilote pour votre navigateur
-# et de spécifier le chemin correct
-PATH = "chemin_vers_le_webdriver"
+# Chemin vers le pilote EdgeDriver, remplacez '/chemin/vers/votre/msedgedriver' par le chemin correct sur votre système
+chrome_driver_path = "C:\\Users\\Mathis Delmaere\\Downloads\\chromedriver_win32\\chromedriver.exe"
+service = Service(chrome_driver_path)
 
-# Initialisation du navigateur
-driver = webdriver.Chrome(PATH)
+# Initialiser le navigateur Chrome avec le pilote Chrome WebDriver
+driver = webdriver.Chrome(service=service)
 
-# URL de la page à scraper
-url = "https://letterboxd.com/films/popular/"
-driver.get(url)
+# Ouvrir la page Letterboxd
+driver.get("https://letterboxd.com/films/year/2000/by/release/")
 
-# Attendre que la liste des films soit chargée
-wait = WebDriverWait(driver, 10)
-wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "film-poster")))
+# Attendre quelques secondes pour permettre le chargement de la page
+time.sleep(5)
 
-# Récupérer tous les liens vers les pages de films
-film_links = []
-while True:
-    film_posters = driver.find_elements_by_class_name("film-poster")
-    for film_poster in film_posters:
-        film_link = film_poster.find_element_by_tag_name('a').get_attribute('href')
-        film_links.append(film_link)
-    
-    # Vérifier si il y a une page suivante
-    next_button = driver.find_element_by_xpath("//a[@class='next']")
-    if 'disabled' in next_button.get_attribute('class'):
-        break
-    else:
-        next_button.click()
+# Connexion à la base de données SQLite
+conn = sqlite3.connect('bdd.sql')
+c = conn.cursor()
+
+# Liste pour stocker les liens
+liens = []
+
+# Boucle pour parcourir toutes les pages de films
+for i in range(105):
+    # Trouver tous les éléments avec la classe 'frame' (ce sont les liens des films)
+    elements = driver.find_elements(By.XPATH, "//a[@class='frame']")
+    for element in elements:
+        # Récupérer le lien de chaque film
+        lien = element.get_attribute("href")
+        liens.append(lien)
+
+    # Cliquer sur le bouton 'Suivant'
+    driver.execute_script("window.scrollTo(0, 0);")
+    next_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//a[@class='next']")))
+    next_button.click()
+
+    # Attendre quelques secondes avant de passer à la page suivante
+    time.sleep(5)
+
+    print(liens)
+
+# Insérer les liens dans la base de données
+for lien in liens:
+    c.execute("INSERT INTO LiensFilms (lien) VALUES (?)", (lien,))
+
+# Valider les changements et fermer la connexion à la base de données
+conn.commit()
+conn.close()
 
 # Fermer le navigateur
 driver.quit()
-
-# Afficher les liens vers les pages de films
-for link in film_links:
-    print(link)
