@@ -10,13 +10,13 @@ library(RSQLite)
 Sys.setenv(JAVA_HOME = "C:\\Program Files\\Java\\jre-1.8\\bin")
 
 # Démarrer le serveur Selenium
-rd <- rsDriver(browser="firefox", port=4444L, verbose=F, chromever = NULL)
+rd <- rsDriver(browser="firefox", port=4442L, verbose=F, chromever = NULL)
 client <- rd$client
 client$open()
-client$navigate("https://letterboxd.com/films/decade/2010s/by/release-earliest/")
+client$navigate("https://letterboxd.com/films/decade/2000s/by/release-earliest/")
 
 # Connexion à la base de données SQLite
-conn <- DBI::dbConnect(RSQLite::SQLite(), "films2010s.sqlite")
+conn <- DBI::dbConnect(RSQLite::SQLite(), "films2000s.sqlite")
 
 # Créer la table LiensFilms si elle n'existe pas
 DBI::dbExecute(conn, "CREATE TABLE IF NOT EXISTS LiensFilms (
@@ -25,7 +25,7 @@ DBI::dbExecute(conn, "CREATE TABLE IF NOT EXISTS LiensFilms (
                       );")
 
 # Extraire les liens et les insérer dans la base de données
-for (i in 1:3558) {
+for (i in 1:1644) {  #1644 en 2000 ; 3467 en 2010 ; 2316 en 2020
   elements <- client$findElements(using = "xpath", "//a[@class='frame']")
   for (element in elements) {
     lien <- element$getElementAttribute("href")
