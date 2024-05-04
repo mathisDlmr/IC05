@@ -19,8 +19,9 @@ CREATE TABLE Realisateurs (
 );
 
 CREATE TABLE Genres (
+    id INTEGER AUTO_INCREMENT,
     nom VARCHAR(32),
-    PRIMARY KEY(nom)
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE Films (
@@ -38,7 +39,7 @@ CREATE TABLE Films (
 
 CREATE TABLE genreFilms (
     film INTEGER,
-    genre VARCHAR(32),
+    genre INTEGER,
     PRIMARY KEY(film, genre),
     FOREIGN KEY(film) REFERENCES Films,
     FOREIGN KEY(genre) REFERENCES Genres
