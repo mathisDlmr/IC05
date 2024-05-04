@@ -1,11 +1,16 @@
-install.packages(c("RCurl", "XML", "RSQLite", "rvest"))
+install.packages(c("RCurl", "XML", "RSQLite", "rvest", "jsonlite", "RSelenium"))
 
 library(RCurl)
 library(XML)
 library(RSQLite)
-library(rvest)
+library(jsonlite)
+library(RSelenium)
 
 conn <- dbConnect(SQLite(), "films.sqlite")
+
+Sys.setenv(JAVA_HOME = "C:\\Program Files\\Java\\jre-1.8\\bin")
+driver <- rsDriver(browser="firefox", port=4435L, verbose=F, chromever = NULL)
+remDr <- driver[["client"]]
 
 recupererLien <- function(id) {
   query <- "SELECT lien FROM LiensFilms WHERE id = ?;"
@@ -16,31 +21,67 @@ recupererLien <- function(id) {
   return(result$lien[1])
 }
 
-scrapper <- function(link, id) {
-  page <- htmlParse(getURL(link, ssl.verifypeer = F))
-  nomFilm <- xpathSApply(page, '//*[@id="featured-film-header"]/h1', xmlValue)
-  annee <-xpathSApply(page, '//*[@id="featured-film-header"]/p/small/a', xmlValue)
-  realisateurLien <- xpathApply(page, "//section[@id='featured-film-header']/p/a", xmlAttrs)[[1]]
-  realisateurLien <- realisateurLien[['href']]
-  realisateur <-xpathSApply(page, "//section[@id='featured-film-header']/p/a/span", xmlValue)
+scrapperInfoBasiques <- function(page, id) {
+  nomFilm <- xpathSApply(page, '//div[@class="details"]/h1/span/text()', xmlValue)   #Ctrl+F pour vérifier la syntaxe
+  annee <-xpathSApply(page, '//div[@class="releaseyear"]/a/text()', xmlValue)
   pays <- xpathSApply(page, '//*[@id="tab-details"]/div[2]/p/a', xmlValue)
-  note <- xpathSApply(page, '//*[@id="film-page-wrapper"]/div[2]/aside/section[2]/span/a/text()', xmlValue)
-  vues <- xpathSApply(page, '//*[@id="js-poster-col"]/section[1]/ul/li[1]/a/text()', xmlValue)
-  likes <- xpathSApply(page, '//*[@id="js-poster-col"]/section[1]/ul/li[3]/a/text()', xmlValue)
 
-  print(link)
-  #print(page)
-  print(nomFilm)
-  print(annee)
-  print(realisateurLien)
-  print(realisateur)
+  #dbExecute(conn, "INSERT INTO Films (id, nom, annee, pays) VALUES (?, ?, ?, ?)", id, nomFilm, annee, pays)
+}
 
-  #dbExecute(conn, "INSERT INTO Films (nom, annee, realisateur, pays) VALUES (?, ?, ?, ?)",
-            #nomFilm, annee, realisateur, pays)
+scrapperInfoJSON <- function(page, id) {
+  jsonScript <- xpathSApply(page, '//script[@type="application/ld+json"]', xmlValue)
+  filmJson <- fromJSON(jsonScript)
+  note <- filmJson$aggregateRating$ratingValue
+
+  #dbExecute(conn, "UPDATE Films SET note = ? WHERE id = ?", note, id)
+}
+
+scrapperInfoJS <- function(page, link, id) {
+  remDr$navigate(link)
+  Sys.sleep(5)
+  vues <- remDr$findElement(using = "xpath", value = "//li[@class='stat filmstat-watches']/a")
+  vues <- vues$getElementText()
+  vues <- unlist(vues)
+
+  likes <- remDr$findElement(using = "xpath", value = "//li[@class='stat filmstat-likes']/a")
+  likes <- likes$getElementText()
+  likes <- unlist(likes)
+
+  dbExecute(conn, "UPDATE Films SET vues = ?, likes = ? WHERE id = ?", vues, likes, id)
+}
+
+scrapperRealisateur <- function(page, id) {
+  realisateurLien <- xpathApply(page, '//p[@class="credits"]/span[2]/a', xmlAttrs)[[1]]
+  realisateurLien <- realisateurLien[['href']]
+  realisateur <-xpathSApply(page, '//p[@class="credits"]/span[2]/a/span/text()', xmlValue)
+  nomSplit <- strsplit(realisateur, " ")
+  nom <- nomSplit[[1]][1]
+  prenom <- nomSplit[[1]][2]
+
+  query <- "SELECT id FROM Realisateurs WHERE nom = ? AND prenom = ?;"
+  result <- dbGetQuery(conn, query, nom, prenom)
+
+  if (nrow(result) == 0) {
+    dbExecute(conn, "INSERT INTO Realisateurs (nom, prenom, page) VALUES (?, ?, ?);", nom, prenom, realisateurLien)
+    result <- dbGetQuery(conn, query, nom, prenom)
+  }
+
+  idReal <- result$id[1]
+  dbExecute(conn, "UPDATE Films SET realisateur = ? WHERE id = ?", idReal, id)
+
+}
+
+scrapper <- function(link, id) {
+  page <- htmlParse(getURL(link, ssl.verifypeer = FALSE))        #Ctrl+F pour vérifier la syntaxe
+  scrapperInfoBasiques(page, id)
+  scrapperInfoJSON(page, id)
+  scrapperInfoJS(page, link, id)
+  scrapperRealisateur(page, id)
 }
 
 i <- 1
-while (i<3) {
+while (i<4) {
   lienFilm <- recupererLien(i)
   if (is.null(lienFilm)) {
     print("Fin du programme")

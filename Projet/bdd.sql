@@ -12,8 +12,9 @@ CREATE TABLE LiensFilms (
 
 CREATE TABLE Realisateurs (
     id INTEGER AUTO_INCREMENT,
-    nom VARCHAR(32) NOT NULL,
-    prenom VARCHAR(32) NOT NULL,
+    nom VARCHAR(32),
+    prenom VARCHAR(32),
+    page TEXT,
     PRIMARY KEY(id)
 );
 
@@ -23,19 +24,20 @@ CREATE TABLE Genres (
 );
 
 CREATE TABLE Films (
+    id INTEGER,
     nom VARCHAR(64),
-    annee INTEGER(4) NOT NULL,
-    realisateur INTEGER NOT NULL,
+    annee INTEGER(4),
+    realisateur INTEGER,
     pays VARCHAR(32),
-    note FLOAT(3),                     /* Vérifier la taille du float */
+    note DECIMAL(1,2),
     vues INTEGER(9),
     likes INTEGER(9),
-    PRIMARY KEY(nom),                  /* On suppose que les films ont un nom unique */
+    PRIMARY KEY(id),
     FOREIGN KEY(realisateur) REFERENCES Realisateurs
 );
 
 CREATE TABLE genreFilms (
-    film VARCHAR(64),
+    film INTEGER,
     genre VARCHAR(32),
     PRIMARY KEY(film, genre),
     FOREIGN KEY(film) REFERENCES Films,
@@ -44,13 +46,14 @@ CREATE TABLE genreFilms (
 
 CREATE TABLE Acteurs (
     id INTEGER AUTO_INCREMENT,
-    nom VARCHAR(32) NOT NULL,
-    prenom VARCHAR(32) NOT NULL,
+    nom VARCHAR(32),
+    prenom VARCHAR(32),
+    page TEXT,
     PRIMARY KEY(id)
 );
 
 CREATE TABLE Jouer (
-    film VARCHAR(64),
+    film INTEGER,
     acteur INTEGER,
     PRIMARY KEY(film, acteur)
     FOREIGN KEY(film) REFERENCES Films,
@@ -59,12 +62,12 @@ CREATE TABLE Jouer (
 
 CREATE TABLE Users (
     username VARCHAR(64),
-    pays VARCHAR(32),                   /* Créer une table Pays ? */
+    lieu VARCHAR(32),
     PRIMARY KEY(username)
 );
 
 CREATE TABLE Commentaires (
-    film VARCHAR(64),
+    film INTEGER,
     commentateur VARCHAR(64),
     note FLOAT(3),
     date DATE,
