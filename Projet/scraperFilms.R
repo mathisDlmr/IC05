@@ -1,5 +1,7 @@
 install.packages(c("RCurl", "XML", "RSQLite", "rvest", "jsonlite", "RSelenium"))
 
+#Reste à faire : Genres, Acteurs, Jouer, (Users, Commentaires)
+
 library(RCurl)
 library(XML)
 library(RSQLite)
@@ -48,7 +50,7 @@ scrapperInfoJS <- function(page, link, id) {
   likes <- likes$getElementText()
   likes <- unlist(likes)
 
-  dbExecute(conn, "UPDATE Films SET vues = ?, likes = ? WHERE id = ?", vues, likes, id)
+  #dbExecute(conn, "UPDATE Films SET vues = ?, likes = ? WHERE id = ?", vues, likes, id)
 }
 
 scrapperRealisateur <- function(page, id) {
@@ -59,29 +61,29 @@ scrapperRealisateur <- function(page, id) {
   nom <- nomSplit[[1]][1]
   prenom <- nomSplit[[1]][2]
 
-  query <- "SELECT id FROM Realisateurs WHERE nom = ? AND prenom = ?;"
-  result <- dbGetQuery(conn, query, nom, prenom)
+  #query <- "SELECT id FROM Realisateurs WHERE nom = ? AND prenom = ?;"
+  #result <- dbGetQuery(conn, query, nom, prenom)
 
   if (nrow(result) == 0) {
-    dbExecute(conn, "INSERT INTO Realisateurs (nom, prenom, page) VALUES (?, ?, ?);", nom, prenom, realisateurLien)
-    result <- dbGetQuery(conn, query, nom, prenom)
+    #dbExecute(conn, "INSERT INTO Realisateurs (nom, prenom, page) VALUES (?, ?, ?);", nom, prenom, realisateurLien)
+    #result <- dbGetQuery(conn, query, nom, prenom)
   }
 
-  idReal <- result$id[1]
-  dbExecute(conn, "UPDATE Films SET realisateur = ? WHERE id = ?", idReal, id)
+  #idReal <- result$id[1]
+  #dbExecute(conn, "UPDATE Films SET realisateur = ? WHERE id = ?", idReal, id)
 
 }
 
 scrapper <- function(link, id) {
-  page <- htmlParse(getURL(link, ssl.verifypeer = FALSE))        #Ctrl+F pour vérifier la syntaxe
+  page <- htmlParse(getURL(link, ssl.verifypeer = FALSE)) #Ctrl+F pour vérifier la syntaxe des XPath
   scrapperInfoBasiques(page, id)
   scrapperInfoJSON(page, id)
   scrapperInfoJS(page, link, id)
   scrapperRealisateur(page, id)
 }
 
-i <- 1
-while (i<4) {
+i <- 1 #Clé primaire incrémentée à la main pour la stocker en variable
+while (TRUE) {
   lienFilm <- recupererLien(i)
   if (is.null(lienFilm)) {
     print("Fin du programme")
