@@ -1,12 +1,12 @@
 import sqlite3
 
-conn_src = sqlite3.connect('films copy 2.sqlite')
+conn_src = sqlite3.connect('LiensFilms2010s.sqlite')
 cursor_src = conn_src.cursor()
 
-conn_dest = sqlite3.connect('films.sqlite')
+conn_dest = sqlite3.connect('films2010s.sqlite')
 cursor_dest = conn_dest.cursor()
 
-tables_to_transfer = ['LiensFilms', 'Realisateurs', 'Genres', 'Films', 'genreFilms', 'Acteurs', 'Jouer', 'Users', 'Commentaires']
+tables_to_transfer = ['LiensFilms']
 
 def entry_exists(cursor, table, id_value):
     if (table in ('LiensFilms', 'Realisateurs', 'Genres', 'Films', 'Acteurs', 'Users', 'Commentaires')):

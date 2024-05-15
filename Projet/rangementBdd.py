@@ -1,14 +1,12 @@
 import sqlite3
 
 def rangement():
-    conn = sqlite3.connect('films.sqlite')
+    conn = sqlite3.connect('films2010s.sqlite')
     curseur = conn.cursor()
-    curseur.execute("DELETE FROM Films;")
-    curseur.execute("DELETE FROM Jouer;")
-    curseur.execute("DELETE FROM Realisateurs;")
-    curseur.execute("DELETE FROM Genres;")
-    curseur.execute("DELETE FROM GenreFilms;")
-    curseur.execute("DELETE FROM Acteurs;")
+
+    curseur.execute("""
+        DELETE FROM Realisateurs;
+    """)
 
     conn.commit()
     conn.close()
