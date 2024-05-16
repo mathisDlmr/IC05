@@ -9,7 +9,7 @@ library(jsonlite)
 conn <- dbConnect(SQLite(), "films2010s.sqlite")
 
 Sys.setenv(JAVA_HOME = "C:\\Program Files\\Java\\jre-1.8\\bin")
-driver <- rsDriver(browser = "firefox", port = 4443L, verbose = F, chromever = NULL)
+driver <- rsDriver(browser = "firefox", port = 4444L, verbose = F, chromever = NULL)
 remDr <- driver[["client"]]
 
 recupererLien <- function(id) {

@@ -5,7 +5,7 @@ def rangement():
     curseur = conn.cursor()
 
     curseur.execute("""
-        DELETE FROM Realisateurs;
+        DELETE FROM Films WHERE id=4361;
     """)
 
     conn.commit()
