@@ -9,7 +9,7 @@ library(jsonlite)
 conn <- dbConnect(SQLite(), "films2010s.sqlite")
 
 Sys.setenv(JAVA_HOME = "C:\\Program Files\\Java\\jre-1.8\\bin")
-driver <- rsDriver(browser = "firefox", port = 4438L, verbose = F, chromever = NULL)
+driver <- rsDriver(browser = "firefox", port = 4443L, verbose = F, chromever = NULL)
 remDr <- driver[["client"]]
 
 recupererLien <- function(id) {
@@ -67,7 +67,7 @@ scrapperInfoJSON <- function(page, id) {
     }
 
     if (length(nbNotes) == 0) {
-        note <- -1
+        nbNotes <- -1
     }
 
     dbExecute(conn, "UPDATE Films SET note = ?, nbNotes = ? WHERE id = ?", params = c(note, nbNotes, id))
@@ -92,6 +92,7 @@ scrapperInfoJS <- function(link, id) {
             vues <- vues$getElementText()
             vues <- unlist(vues)
             convertK(vues)
+            dbExecute(conn, "UPDATE Films SET vues = ? WHERE id = ?", params = c(vues, id))
         }, error = function(e) {
             print("----- Vues pas trouvés.")
         })
@@ -103,6 +104,7 @@ scrapperInfoJS <- function(link, id) {
             likes <- likes$getElementText()
             likes <- unlist(likes)
             convertK(likes)
+            dbExecute(conn, "UPDATE Films SET likes = ? WHERE id = ?", params = c(likes, id))
         }, error = function(e) {
             print("----- Likes pas trouvés.")
         })
@@ -114,13 +116,14 @@ scrapperInfoJS <- function(link, id) {
             fans <- fans$getElementText()
             fans <- unlist(fans)
             convertK(fans)
+            dbExecute(conn, "UPDATE Films SET fans = ? WHERE id = ?", params = c(fans, id))
+
         }, error = function(e) {
             print("----- Fans pas trouvés.")
+            fans <- -1
         })
     })
     
-    dbExecute(conn, "UPDATE Films SET vues = ?, likes = ?, fans = ? WHERE id = ?", params = c(vues, likes, fans, id))
-
     print("Info JS OK")
 }
 
@@ -265,13 +268,48 @@ scrapperActeurs <- function(page, id) {
 scrapper <- function(link, id) {
     print(id)
     page <- htmlParse(getURL(link, ssl.verifypeer = FALSE)) #Ctrl+F pour vérifier la syntaxe des XPath
-    scrapperInfoBasiques(page, id)
-    scrapperInfoJSON(page, id)
-    scrapperInfoJS(link, id)
-    scrapperRealisateur(page, id)
-    scrapperGenre(page, id)
-    scrapperTheme(page, id)
-    scrapperActeurs(page, id)
+
+    tryCatch({
+        scrapperInfoBasiques(page, id)
+    }, error = function(e) {
+        print(paste("Erreur Info Basiques", e))  
+    })
+
+    tryCatch({
+        scrapperInfoJSON(page, id)
+    }, error = function(e) {
+        print(paste("Erreur Info JSON", e))  
+    })
+
+    tryCatch({
+        scrapperInfoJS(link, id)
+    }, error = function(e) {
+        print(paste("Erreur Info JavaScript", e))  
+    })
+
+    tryCatch({
+        scrapperRealisateur(page, id)
+    }, error = function(e) {
+        print(paste("Erreur Info Réalisateur", e))  
+    })
+
+    tryCatch({
+        scrapperGenre(page, id)
+    }, error = function(e) {
+        print(paste("Erreur Info Genre", e))  
+    })
+
+    tryCatch({
+        scrapperTheme(page, id)
+    }, error = function(e) {
+        print(paste("Erreur Info Thèmes", e))  
+    })
+
+    tryCatch({
+        scrapperActeurs(page, id)
+    }, error = function(e) {
+        print(paste("Erreur Info Acteurs", e))  
+    })
 }
 
 i <- 1 #Clé primaire incrémentée à la main pour la stocker en variable et reprendre le script de n'importe où
