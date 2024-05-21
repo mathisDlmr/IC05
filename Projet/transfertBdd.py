@@ -1,9 +1,9 @@
 import sqlite3
 
-conn_src = sqlite3.connect('films2010s.sqlite')
+conn_src = sqlite3.connect('films2010s copy 10.sqlite')
 cursor_src = conn_src.cursor()
 
-conn_dest = sqlite3.connect('films2010s copy 10.sqlite')
+conn_dest = sqlite3.connect('films2010s.sqlite')
 cursor_dest = conn_dest.cursor()
 
 tables_to_transfer = ['LiensFilms', 'Realisateurs', 'Genres', 'Films', 'Acteurs', 'Themes', 'themeFilms', 'genreFilms', 'Jouer']
