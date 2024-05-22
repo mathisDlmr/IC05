@@ -1,11 +1,12 @@
 import sqlite3
 
-conn = sqlite3.connect('films.sqlite')
+conn = sqlite3.connect('films2010s.sqlite')
 curseur = conn.cursor()
 
-curseur.execute("SELECT COUNT(*) FROM Films WHERE id NOT IN (SELECT film FROM genreFilms)")
+curseur.execute("SELECT nom, prenom FROM Acteurs WHERE id IN(SELECT acteur FROM Jouer JOIN Films ON Jouer.film=Films.id WHERE nom='Khola Hawa')")
 
-nombre_de_lignes = curseur.fetchone()[0]
-print("Nombre de lignes :", nombre_de_lignes)
+result = curseur.fetchall()
+for row in result:
+    print(row)
 
 conn.close()

@@ -6,7 +6,7 @@ library(RSQLite)
 library(RSelenium)
 library(jsonlite)
 
-conn <- dbConnect(SQLite(), "films2010s copy 10.sqlite")
+conn <- dbConnect(SQLite(), "IC05\\films2010s copy 10.sqlite")
 
 Sys.setenv(JAVA_HOME = "C:\\Program Files\\Java\\jre-1.8\\bin")
 driver <- rsDriver(browser = "firefox", port = 4431L, verbose = F, chromever = NULL)
