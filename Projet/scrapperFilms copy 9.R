@@ -6,7 +6,7 @@ library(RSQLite)
 library(RSelenium)
 library(jsonlite)
 
-conn <- dbConnect(SQLite(), "IC05\\films2010s copy 9.sqlite")
+conn <- dbConnect(SQLite(), "films2010s copy 9.sqlite")
 
 Sys.setenv(JAVA_HOME = "C:\\Program Files\\Java\\jre-1.8\\bin")
 driver <- rsDriver(browser = "firefox", port = 4432L, verbose = F, chromever = NULL)
@@ -312,7 +312,7 @@ scrapper <- function(link, id) {
     })
 }
 
-i <- 105698 #Clé primaire incrémentée à la main pour la stocker en variable et reprendre le script de n'importe où
+i <- 186308 #Clé primaire incrémentée à la main pour la stocker en variable et reprendre le script de n'importe où
 while (i < 248961) {
     tryCatch({
         lienFilm <- recupererLien(i)

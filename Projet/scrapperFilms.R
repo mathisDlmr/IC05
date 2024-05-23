@@ -312,7 +312,7 @@ scrapper <- function(link, id) {
     })
 }
 
-i <- 105700 #Clé primaire incrémentée à la main pour la stocker en variable et reprendre le script de n'importe où
+i <- 183660 #Clé primaire incrémentée à la main pour la stocker en variable et reprendre le script de n'importe où
 while (i < 248961) {
     tryCatch({
         lienFilm <- recupererLien(i)
