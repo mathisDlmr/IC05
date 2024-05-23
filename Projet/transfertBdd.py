@@ -6,65 +6,59 @@ source_curseur = source_conn.cursor()
 dest_conn = sqlite3.connect('films2010s.sqlite')
 dest_curseur = dest_conn.cursor()
 
+# Fonction pour obtenir le prochain ID disponible
+def get_next_id(table_name):
+    dest_curseur.execute(f'SELECT MAX(id) FROM {table_name}')
+    row = dest_curseur.fetchone()
+    return (row[0] or 0) + 1
+
 # Fonction pour obtenir ou insérer un réalisateur et retourner son ID
 def get_or_insert_realisateur(nom, prenom, page):
-    dest_curseur.execute('''
-    SELECT id FROM Realisateurs WHERE nom = ? AND prenom = ?;
-    ''', (nom, prenom))
+    dest_curseur.execute('SELECT id FROM Realisateurs WHERE nom = ? AND prenom = ?', (nom, prenom))
     row = dest_curseur.fetchone()
     if row:
         return row[0]
     else:
-        dest_curseur.execute('''
-        INSERT INTO Realisateurs (nom, prenom, page) VALUES (?, ?, ?);
-        ''', (nom, prenom, page))
+        new_id = get_next_id('Realisateurs')
+        dest_curseur.execute('INSERT INTO Realisateurs (id, nom, prenom, page) VALUES (?, ?, ?, ?)', (new_id, nom, prenom, page))
         dest_conn.commit()
-        return dest_curseur.lastrowid
+        return new_id
 
 # Fonction pour obtenir ou insérer un acteur et retourner son ID
 def get_or_insert_acteur(nom, prenom, page):
-    dest_curseur.execute('''
-    SELECT id FROM Acteurs WHERE nom = ? AND prenom = ?;
-    ''', (nom, prenom))
+    dest_curseur.execute('SELECT id FROM Acteurs WHERE nom = ? AND prenom = ?', (nom, prenom))
     row = dest_curseur.fetchone()
     if row:
         return row[0]
     else:
-        dest_curseur.execute('''
-        INSERT INTO Acteurs (nom, prenom, page) VALUES (?, ?, ?);
-        ''', (nom, prenom, page))
+        new_id = get_next_id('Acteurs')
+        dest_curseur.execute('INSERT INTO Acteurs (id, nom, prenom, page) VALUES (?, ?, ?, ?)', (new_id, nom, prenom, page))
         dest_conn.commit()
-        return dest_curseur.lastrowid
+        return new_id
 
 # Fonction pour obtenir ou insérer un thème et retourner son ID
 def get_or_insert_theme(nom):
-    dest_curseur.execute('''
-    SELECT id FROM Themes WHERE nom = ?;
-    ''', (nom,))
+    dest_curseur.execute('SELECT id FROM Themes WHERE nom = ?', (nom,))
     row = dest_curseur.fetchone()
     if row:
         return row[0]
     else:
-        dest_curseur.execute('''
-        INSERT INTO Themes (nom) VALUES (?);
-        ''', (nom,))
+        new_id = get_next_id('Themes')
+        dest_curseur.execute('INSERT INTO Themes (id, nom) VALUES (?, ?)', (new_id, nom))
         dest_conn.commit()
-        return dest_curseur.lastrowid
+        return new_id
 
 # Fonction pour obtenir ou insérer un genre et retourner son ID
 def get_or_insert_genre(nom):
-    dest_curseur.execute('''
-    SELECT id FROM Genres WHERE nom = ?;
-    ''', (nom,))
+    dest_curseur.execute('SELECT id FROM Genres WHERE nom = ?', (nom,))
     row = dest_curseur.fetchone()
     if row:
         return row[0]
     else:
-        dest_curseur.execute('''
-        INSERT INTO Genres (nom) VALUES (?);
-        ''', (nom,))
+        new_id = get_next_id('Genres')
+        dest_curseur.execute('INSERT INTO Genres (id, nom) VALUES (?, ?)', (new_id, nom))
         dest_conn.commit()
-        return dest_curseur.lastrowid
+        return new_id
 
 # Transférer les réalisateurs
 source_curseur.execute('SELECT nom, prenom, page FROM Realisateurs')
