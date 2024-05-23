@@ -1,46 +1,157 @@
 import sqlite3
 
-conn_src = sqlite3.connect('films2010s copy 10.sqlite')
-cursor_src = conn_src.cursor()
+# Connexion aux deux bases de données
+source_conn = sqlite3.connect('films2010s copy 2.sqlite')
+source_curseur = source_conn.cursor()
+dest_conn = sqlite3.connect('films2010s.sqlite')
+dest_curseur = dest_conn.cursor()
 
-conn_dest = sqlite3.connect('films2010s.sqlite')
-cursor_dest = conn_dest.cursor()
+# Fonction pour obtenir ou insérer un réalisateur et retourner son ID
+def get_or_insert_realisateur(nom, prenom, page):
+    dest_curseur.execute('''
+    SELECT id FROM Realisateurs WHERE nom = ? AND prenom = ?;
+    ''', (nom, prenom))
+    row = dest_curseur.fetchone()
+    if row:
+        return row[0]
+    else:
+        dest_curseur.execute('''
+        INSERT INTO Realisateurs (nom, prenom, page) VALUES (?, ?, ?);
+        ''', (nom, prenom, page))
+        dest_conn.commit()
+        return dest_curseur.lastrowid
 
-tables_to_transfer = ['LiensFilms', 'Realisateurs', 'Genres', 'Films', 'Acteurs', 'Themes', 'themeFilms', 'genreFilms', 'Jouer']
+# Fonction pour obtenir ou insérer un acteur et retourner son ID
+def get_or_insert_acteur(nom, prenom, page):
+    dest_curseur.execute('''
+    SELECT id FROM Acteurs WHERE nom = ? AND prenom = ?;
+    ''', (nom, prenom))
+    row = dest_curseur.fetchone()
+    if row:
+        return row[0]
+    else:
+        dest_curseur.execute('''
+        INSERT INTO Acteurs (nom, prenom, page) VALUES (?, ?, ?);
+        ''', (nom, prenom, page))
+        dest_conn.commit()
+        return dest_curseur.lastrowid
 
-def entry_exists(cursor, table, id_value, id_value2):
-    if (table in ('LiensFilms', 'Realisateurs', 'Genres', 'Films', 'Acteurs', 'Themes')):
-        cursor.execute(f"SELECT id FROM {table} WHERE id=?", (id_value,))
-    elif (table == 'Jouer'):
-        cursor.execute(f"SELECT film, acteur FROM {table} WHERE film=? AND acteur=?", (id_value, id_value2))
-    elif (table == 'themeFilms'):
-        cursor.execute(f"SELECT film, theme FROM {table} WHERE film=? AND theme=?", (id_value, id_value2))
-    elif (table == 'genreFilms'):
-        cursor.execute(f"SELECT film, genre FROM {table} WHERE film=? AND genre=?", (id_value, id_value2))
+# Fonction pour obtenir ou insérer un thème et retourner son ID
+def get_or_insert_theme(nom):
+    dest_curseur.execute('''
+    SELECT id FROM Themes WHERE nom = ?;
+    ''', (nom,))
+    row = dest_curseur.fetchone()
+    if row:
+        return row[0]
+    else:
+        dest_curseur.execute('''
+        INSERT INTO Themes (nom) VALUES (?);
+        ''', (nom,))
+        dest_conn.commit()
+        return dest_curseur.lastrowid
 
-    return cursor.fetchone() is not None
+# Fonction pour obtenir ou insérer un genre et retourner son ID
+def get_or_insert_genre(nom):
+    dest_curseur.execute('''
+    SELECT id FROM Genres WHERE nom = ?;
+    ''', (nom,))
+    row = dest_curseur.fetchone()
+    if row:
+        return row[0]
+    else:
+        dest_curseur.execute('''
+        INSERT INTO Genres (nom) VALUES (?);
+        ''', (nom,))
+        dest_conn.commit()
+        return dest_curseur.lastrowid
 
-def transfer_data(src_cursor, dest_cursor, table):
-    try:
-        src_cursor.execute(f"SELECT * FROM {table}")
-        data = src_cursor.fetchall()
-        for row in data:
-            if (table in ('LiensFilms', 'Realisateurs', 'Genres', 'Films', 'Acteurs', 'Themes')):
-                id_value = row[0]
-                if not entry_exists(dest_cursor, table, id_value, 0):
-                    dest_cursor.execute(f"INSERT INTO {table} VALUES ({', '.join(['?' for _ in range(len(row))])})", row)
-            elif (table in ('themeFilms', 'genreFilms', 'Jouer')):
-                id_values = row[:2]  # Les IDs sont les deux premiers éléments dans chaque ligne de genreFilms et Jouer
-                if not entry_exists(dest_cursor, table, id_values[0], id_values[1]):
-                    dest_cursor.execute(f"INSERT INTO {table} VALUES ({', '.join(['?' for _ in range(len(row))])})", row)
-    except Exception as e:
-        print(f"Erreur lors du transfert des données de la table {table} : {e}")
+# Transférer les réalisateurs
+source_curseur.execute('SELECT nom, prenom, page FROM Realisateurs')
+realisateurs = source_curseur.fetchall()
+for nom, prenom, page in realisateurs:
+    get_or_insert_realisateur(nom, prenom, page)
 
-for table in tables_to_transfer:
-    transfer_data(cursor_src, cursor_dest, table)
+# Transférer les acteurs
+source_curseur.execute('SELECT nom, prenom, page FROM Acteurs')
+acteurs = source_curseur.fetchall()
+for nom, prenom, page in acteurs:
+    get_or_insert_acteur(nom, prenom, page)
 
-conn_dest.commit()
-conn_src.close()
-conn_dest.close()
+# Transférer les thèmes
+source_curseur.execute('SELECT nom FROM Themes')
+themes = source_curseur.fetchall()
+for (nom,) in themes:
+    get_or_insert_theme(nom)
 
-print("Transfert de données terminé.")
+# Transférer les genres
+source_curseur.execute('SELECT nom FROM Genres')
+genres = source_curseur.fetchall()
+for (nom,) in genres:
+    get_or_insert_genre(nom)
+
+# Transférer les films
+source_curseur.execute('SELECT id, nom, annee, realisateur, pays, note, nbNotes, vues, fans, likes FROM Films')
+films = source_curseur.fetchall()
+for film in films:
+    film_id, nom, annee, realisateur, pays, note, nbNotes, vues, fans, likes = film
+    # Récupérer l'ID du réalisateur dans la base de données de destination
+    source_curseur.execute('SELECT nom, prenom FROM Realisateurs WHERE id = ?', (realisateur,))
+    nom_realisateur, prenom_realisateur = source_curseur.fetchone()
+    realisateur_id = get_or_insert_realisateur(nom_realisateur, prenom_realisateur, None)
+    
+    # Insérer le film dans la base de données de destination
+    dest_curseur.execute('''
+    INSERT INTO Films (id, nom, annee, realisateur, pays, note, nbNotes, vues, fans, likes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    ''', (film_id, nom, annee, realisateur_id, pays, note, nbNotes, vues, fans, likes))
+    dest_conn.commit()
+
+# Transférer les relations entre films et acteurs (table Jouer)
+source_curseur.execute('SELECT film, acteur FROM Jouer')
+jouer = source_curseur.fetchall()
+for film, acteur in jouer:
+    # Récupérer l'ID de l'acteur dans la base de données de destination
+    source_curseur.execute('SELECT nom, prenom FROM Acteurs WHERE id = ?', (acteur,))
+    nom_acteur, prenom_acteur = source_curseur.fetchone()
+    acteur_id = get_or_insert_acteur(nom_acteur, prenom_acteur, None)
+    
+    # Insérer la relation dans la base de données de destination
+    dest_curseur.execute('''
+    INSERT INTO Jouer (film, acteur) VALUES (?, ?);
+    ''', (film, acteur_id))
+    dest_conn.commit()
+
+# Transférer les relations entre films et genres (table genreFilms)
+source_curseur.execute('SELECT film, genre FROM genreFilms')
+genre_films = source_curseur.fetchall()
+for film, genre in genre_films:
+    # Récupérer l'ID du genre dans la base de données de destination
+    source_curseur.execute('SELECT nom FROM Genres WHERE id = ?', (genre,))
+    (nom_genre,) = source_curseur.fetchone()
+    genre_id = get_or_insert_genre(nom_genre)
+    
+    # Insérer la relation dans la base de données de destination
+    dest_curseur.execute('''
+    INSERT INTO genreFilms (film, genre) VALUES (?, ?);
+    ''', (film, genre_id))
+    dest_conn.commit()
+
+# Transférer les relations entre films et thèmes (table themeFilms)
+source_curseur.execute('SELECT film, theme FROM themeFilms')
+theme_films = source_curseur.fetchall()
+for film, theme in theme_films:
+    # Récupérer l'ID du thème dans la base de données de destination
+    source_curseur.execute('SELECT nom FROM Themes WHERE id = ?', (theme,))
+    (nom_theme,) = source_curseur.fetchone()
+    theme_id = get_or_insert_theme(nom_theme)
+    
+    # Insérer la relation dans la base de données de destination
+    dest_curseur.execute('''
+    INSERT INTO themeFilms (film, theme) VALUES (?, ?);
+    ''', (film, theme_id))
+    dest_conn.commit()
+
+# Fermeture des connexions
+source_conn.close()
+dest_conn.close()
