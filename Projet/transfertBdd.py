@@ -93,19 +93,23 @@ for film in films:
     dest_curseur.execute('SELECT id FROM Films WHERE id = ?', (film_id,))
     row = dest_curseur.fetchone()
     if row:
-        print("Le film ", film_id," était déjà dans la BDD")
+        print(f"Le film {film_id} était déjà dans la BDD")
     else:
         # Récupérer l'ID du réalisateur dans la base de données de destination
         source_curseur.execute('SELECT nom, prenom FROM Realisateurs WHERE id = ?', (realisateur,))
-        nom_realisateur, prenom_realisateur = source_curseur.fetchone()
-        realisateur_id = get_or_insert_realisateur(nom_realisateur, prenom_realisateur, None)
-        
-        # Insérer le film dans la base de données de destination
-        dest_curseur.execute('''
-        INSERT INTO Films (id, nom, annee, realisateur, pays, note, nbNotes, vues, fans, likes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        ''', (film_id, nom, annee, realisateur_id, pays, note, nbNotes, vues, fans, likes))
-        dest_conn.commit()
+        realisateur_row = source_curseur.fetchone()
+        if realisateur_row:
+            nom_realisateur, prenom_realisateur = realisateur_row
+            realisateur_id = get_or_insert_realisateur(nom_realisateur, prenom_realisateur, None)
+            
+            # Insérer le film dans la base de données de destination
+            dest_curseur.execute('''
+            INSERT INTO Films (id, nom, annee, realisateur, pays, note, nbNotes, vues, fans, likes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            ''', (film_id, nom, annee, realisateur_id, pays, note, nbNotes, vues, fans, likes))
+            dest_conn.commit()
+        else:
+            print(f"Réalisateur ID {realisateur} non trouvé pour le film {film_id}")
 
 # Transférer les relations entre films et acteurs (table Jouer)
 source_curseur.execute('SELECT film, acteur FROM Jouer')
@@ -113,19 +117,23 @@ jouer = source_curseur.fetchall()
 for film, acteur in jouer:
     # Récupérer l'ID de l'acteur dans la base de données de destination
     source_curseur.execute('SELECT nom, prenom FROM Acteurs WHERE id = ?', (acteur,))
-    nom_acteur, prenom_acteur = source_curseur.fetchone()
-    acteur_id = get_or_insert_acteur(nom_acteur, prenom_acteur, None)
+    acteur_row = source_curseur.fetchone()
+    if acteur_row:
+        nom_acteur, prenom_acteur = acteur_row
+        acteur_id = get_or_insert_acteur(nom_acteur, prenom_acteur, None)
 
-    dest_curseur.execute('SELECT film, acteur FROM Joeur WHERE film = ? AND acteur = ?', (film, acteur_id))
-    row = dest_curseur.fetchone()
-    if row:
-        print("La relation était déjà dans la BDD")
+        dest_curseur.execute('SELECT film, acteur FROM Jouer WHERE film = ? AND acteur = ?', (film, acteur_id))
+        row = dest_curseur.fetchone()
+        if row:
+            print(f"La relation film-acteur ({film}, {acteur_id}) était déjà dans la BDD")
+        else:
+            # Insérer la relation dans la base de données de destination
+            dest_curseur.execute('''
+            INSERT INTO Jouer (film, acteur) VALUES (?, ?);
+            ''', (film, acteur_id))
+            dest_conn.commit()
     else:
-        # Insérer la relation dans la base de données de destination
-        dest_curseur.execute('''
-        INSERT INTO Jouer (film, acteur) VALUES (?, ?);
-        ''', (film, acteur_id))
-        dest_conn.commit()
+        print(f"Acteur ID {acteur} non trouvé pour le film {film}")
 
 # Transférer les relations entre films et genres (table genreFilms)
 source_curseur.execute('SELECT film, genre FROM genreFilms')
@@ -133,19 +141,23 @@ genre_films = source_curseur.fetchall()
 for film, genre in genre_films:
     # Récupérer l'ID du genre dans la base de données de destination
     source_curseur.execute('SELECT nom FROM Genres WHERE id = ?', (genre,))
-    (nom_genre,) = source_curseur.fetchone()
-    genre_id = get_or_insert_genre(nom_genre)
+    genre_row = source_curseur.fetchone()
+    if genre_row:
+        (nom_genre,) = genre_row
+        genre_id = get_or_insert_genre(nom_genre)
 
-    dest_curseur.execute('SELECT film, genre FROM genreFilms WHERE film = ? AND genre = ?', (film, genre_id))
-    row = dest_curseur.fetchone()
-    if row:
-        print("La relation était déjà dans la BDD")
+        dest_curseur.execute('SELECT film, genre FROM genreFilms WHERE film = ? AND genre = ?', (film, genre_id))
+        row = dest_curseur.fetchone()
+        if row:
+            print(f"La relation film-genre ({film}, {genre_id}) était déjà dans la BDD")
+        else:
+            # Insérer la relation dans la base de données de destination
+            dest_curseur.execute('''
+            INSERT INTO genreFilms (film, genre) VALUES (?, ?);
+            ''', (film, genre_id))
+            dest_conn.commit()
     else:
-        # Insérer la relation dans la base de données de destination
-        dest_curseur.execute('''
-        INSERT INTO genreFilms (film, genre) VALUES (?, ?);
-        ''', (film, genre_id))
-        dest_conn.commit()
+        print(f"Genre ID {genre} non trouvé pour le film {film}")
 
 # Transférer les relations entre films et thèmes (table themeFilms)
 source_curseur.execute('SELECT film, theme FROM themeFilms')
@@ -153,19 +165,23 @@ theme_films = source_curseur.fetchall()
 for film, theme in theme_films:
     # Récupérer l'ID du thème dans la base de données de destination
     source_curseur.execute('SELECT nom FROM Themes WHERE id = ?', (theme,))
-    (nom_theme,) = source_curseur.fetchone()
-    theme_id = get_or_insert_theme(nom_theme)
+    theme_row = source_curseur.fetchone()
+    if theme_row:
+        (nom_theme,) = theme_row
+        theme_id = get_or_insert_theme(nom_theme)
 
-    dest_curseur.execute('SELECT film, theme FROM themeFilms WHERE film = ? AND theme = ?', (film, theme_id))
-    row = dest_curseur.fetchone()
-    if row:
-        print("La relation était déjà dans la BDD")
+        dest_curseur.execute('SELECT film, theme FROM themeFilms WHERE film = ? AND theme = ?', (film, theme_id))
+        row = dest_curseur.fetchone()
+        if row:
+            print(f"La relation film-thème ({film}, {theme_id}) était déjà dans la BDD")
+        else:
+            # Insérer la relation dans la base de données de destination
+            dest_curseur.execute('''
+            INSERT INTO themeFilms (film, theme) VALUES (?, ?);
+            ''', (film, theme_id))
+            dest_conn.commit()
     else:
-        # Insérer la relation dans la base de données de destination
-        dest_curseur.execute('''
-        INSERT INTO themeFilms (film, theme) VALUES (?, ?);
-        ''', (film, theme_id))
-        dest_conn.commit()
+        print(f"Thème ID {theme} non trouvé pour le film {film}")
 
 # Fermeture des connexions
 source_conn.close()
