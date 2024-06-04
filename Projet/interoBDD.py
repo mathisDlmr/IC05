@@ -1,12 +1,15 @@
 import sqlite3
+import csv
 
 conn = sqlite3.connect('films2010s.sqlite')
-curseur = conn.cursor()
+cursor = conn.cursor()
 
-curseur.execute("SELECT nom, prenom FROM Acteurs WHERE id IN(SELECT acteur FROM Jouer JOIN Films ON Jouer.film=Films.id WHERE nom='Khola Hawa')")
-
-result = curseur.fetchall()
-for row in result:
-    print(row)
+cursor.execute(f"SELECT themeFilms.film, Themes.nom FROM themeFilms JOIN Themes ON themeFilms.theme=Themes.id JOIN Films ON themeFilms.film=Films.id WHERE Films.note!=-1")
+with open('themeFilms2.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    csv_writer = csv.writer(csvfile)
+    csv_writer.writerow([i[0] for i in cursor.description])
+    csv_writer.writerows(cursor)
 
 conn.close()
+
+print("Conversion terminée.")
