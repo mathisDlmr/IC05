@@ -1,9 +1,12 @@
 DROP TABLE IF EXISTS LiensFilms;
 DROP TABLE IF EXISTS Realisateurs;
+DROP TABLE IF EXISTS Genres;
+DROP TABLE IF EXISTS Thèmes;
 DROP TABLE IF EXISTS Films;
+DROP TABLE IF EXISTS genreFilms;
+DROP TABLE IF EXISTS themeFilms;
 DROP TABLE IF EXISTS Acteurs;
-DROP TABLE IF EXISTS Users;
-DROP TABLE IF EXISTS Commentaires;
+DROP TABLE IF EXISTS Jouer;
 
 CREATE TABLE LiensFilms (
     id INTEGER PRIMARY KEY,
@@ -75,21 +78,4 @@ CREATE TABLE Jouer (
     PRIMARY KEY(film, acteur)
     FOREIGN KEY(film) REFERENCES Films,
     FOREIGN KEY(acteur) REFERENCES Acteurs
-);
-
-CREATE TABLE Users (
-    username VARCHAR(64),
-    lieu VARCHAR(32),
-    PRIMARY KEY(username)
-);
-
-CREATE TABLE Commentaires (
-    film INTEGER,
-    commentateur VARCHAR(64),
-    note FLOAT(3),
-    date DATE,
-    likes INTEGER(6),
-    PRIMARY KEY(film, commentateur),
-    FOREIGN KEY(film) REFERENCES Films,
-    FOREIGN KEY(commentateur) REFERENCES Users
 );
